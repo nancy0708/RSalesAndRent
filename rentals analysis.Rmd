@@ -1,0 +1,131 @@
+---
+title: "Rentals Analysis"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## upload data
+
+
+```{r upload}
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(stringr)
+library(sp)
+library(leaflet)
+rental <- read.csv("rental.csv")
+rentals <- tbl_df(rental)
+```
+
+## Number of rental properties for each agency:
+
+```{r properties}
+rentals%>%
+  group_by(Agency)%>%
+  summarise(num = n())%>%
+  arrange(desc(num))
+
+```
+
+Note that LJ Hooker - Belconnen and Ray White - Canberra post the most number of properties on the list in last month.
+
+## Bar chart:
+This chart shows that the total number of properties in each suburb.
+
+```{r bar}
+#rental%>%
+#  group_by(Suburb)%>%
+#  mutate(count = n())%>%
+#  arrange(desc(count))%>%
+#  select(Suburb, count)
+#  ggplot(data = rentals, mapping = aes(x = reorder(Suburb, count), y = count)) + theme_bw() + geom_bar(stat = 'identity') + theme(axis.text.x = element_text(face = "bold", angle = 45)) + theme(panel.border = element_blank()) + theme(panel.grid = element_blank()) + 
+#  labs(y = "number of properties", title = "Total counts in each suburb")
+```
+
+## Map chart:
+This chart shows the location of each property and the rent for each property.
+
+```{r map}
+rentals$long <- as.numeric(rentals$Longitude)
+rentals$lat <- as.numeric(rentals$Latitude)
+rentals.sp <- SpatialPointsDataFrame(rentals[,c(7,8)], rentals[,-c(7,8)])
+
+m <- leaflet()%>%
+  addTiles()%>%
+  addMarkers(data = rentals, lng = ~Longitude, lat = ~Latitude, popup = (~First.Listed.Price))
+m
+ 
+
+```
+
+## Total rental properties were provided by each agency in each suburb:
+
+```{r total properties}
+rentals%>%
+  group_by(Suburb,Agency)%>%
+  tally()
+```
+
+## Average rental price in each suburb per week:
+
+```{r rent}
+rentals%>%
+  group_by(Suburb)%>%
+  summarise(avg_price = mean(First.Listed.Price.Guide, na.rm = TRUE ))%>%
+  arrange(desc(avg_price))
+```
+
+The rental prices are expensive at Latham and Melba, whatsmore, Charnwood has the cheapest rental price.
+
+## Price different % between listed and price guide
+
+```{r diff}
+rentals%>%
+  select(Agency,Suburb, Price.Guide, First.Listed.Price.Guide)%>%
+  mutate(Percentage = (((First.Listed.Price.Guide - Price.Guide)/Price.Guide))*100)%>%
+  arrange(Percentage)
+```
+
+## Average rental price in each type of room per week:
+
+```{r price}
+bed_no = c(3,4)
+bath_no = c(1,2)
+
+for (i in bed_no) {
+  for (j in bath_no) {
+    rentals%>%
+      filter(Bedrooms == i, Bathrooms == j)%>%
+      summarise(ave_price = mean(First.Listed.Price.Guide, na.rm = TRUE))%>%
+      print()
+  }
+}
+```
+
+3 beds and 1 bath average rental price: $456/week;
+
+3 beds and 2 baths average rental price: $545/week;
+
+4 beds and 1 bath average rental price: $625/week;
+
+4 beds and 2 baths average rental price: $618/week
+
+## How many properties has been listed for each week by each agency:
+
+```{r by week}
+rentals%>%
+  mutate(week = isoweek(as.Date(First.Listed)))%>%
+  group_by(week, Agency)%>%
+  summarise(num = n())
+
+rentals%>%
+  mutate(week = isoweek(as.Date(First.Listed)))%>%
+  group_by(week)%>%
+  summarise(num = n())
+```
+
+

@@ -1,0 +1,139 @@
+---
+title: "Sales Analysis"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data information:
+There are 20 different Agencies and data shows us the properties which were on the sales listing in last month and in ACT, Australia.
+
+This report shows the following results in the analysis:
+
+1.Total number of properties by each Agency.
+
+2.The location of each property.
+
+3.Average price for each type of property.
+
+4.Average price for property in each suburb.
+
+5.Total number of properties had been listed by each Agency in each suburb.
+
+6.Number of properties had been listed in each week.
+
+## upload data
+
+```{r echo=FALSE}
+sales <- read.csv("sales.csv")
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(stringr)
+library(sp)
+library(leaflet)
+sales1 <- tbl_df(sales)
+```
+
+## For each agency, how many properties they post on the list:
+
+```{r agency}
+sales1%>%
+  group_by(Agency)%>%
+  summarise(total_num = n())%>%
+  select(Agency, total_num)%>%
+  arrange(desc(total_num))
+
+```
+
+Note that LJ Hooker Kippax - Holt and Ray White - Canberra post the most properties on the list in last month.
+
+## Bar chart:
+This chart shows that the total number of properties in each suburb.
+
+```{r bar}
+ggplot(sales1, aes(x = Suburb)) + theme_bw() + geom_bar() + theme(axis.text.x = element_text(face = "bold", angle = 45)) + theme(panel.border = element_blank()) + theme(panel.grid = element_blank()) +
+  labs(y = "number of properties", title = "Total counts in each suburb")
+```
+
+## Map chart:
+This chart shows the location of each property.
+
+```{r map}
+devtools::install_github('rstudio/leaflet')
+sales1$long <- as.numeric(sales1$Longitude)
+sales1$lat <- as.numeric(sales1$Latitude)
+sales1.sp <- SpatialPointsDataFrame(sales1[,c(7,8)], sales1[,-c(7,8)])
+
+m <- leaflet()%>%
+  addTiles()%>%
+  addMarkers(data = sales1, lng = ~Longitude, lat = ~Latitude, popup = ~Suburb)
+m
+
+
+ #ggplot() + geom_point(data = sales1, aes(x = Longitude, y = Latitude), color = "red")
+
+```
+
+## For each type of the property, what is the average sales price guide:
+
+```{r price guide}
+sales1%>%
+  group_by(Property.Type)%>%
+  summarise(avg_guide = mean(Price.Guide, na.rm = TRUE), n = n())
+```
+
+## The average price for each suburb:
+
+```{r suburb}
+sales1%>%
+  group_by(Suburb)%>%
+  summarise(ave_first_listed = mean(First.Listed.Price.Guide, na.rm = TRUE), ave_price_guide = mean(Price.Guide, na.rm = TRUE))%>%
+  arrange(desc(ave_first_listed),desc(ave_price_guide))
+
+```
+
+The properties in McKellar are much more expensive than other suburbs.
+
+## How many properties that each agency post in each suburb:
+
+```{r property in each suburb}
+sales1%>%
+  group_by(Suburb,Agency)%>%
+  tally()%>%
+  print.data.frame()
+
+```
+
+## How many properties has been listed for each week by each agency:
+
+```{r by week}
+sales1%>%
+  mutate(week = isoweek(as.Date(First.Listed)))%>%
+  group_by(week,Agency)%>%
+  summarise(num = n()) 
+
+sales1%>%
+  mutate(week = isoweek(as.Date(First.Listed)))%>%
+  group_by(week)%>%
+  summarise(num = n())
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
