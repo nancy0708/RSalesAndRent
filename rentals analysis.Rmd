@@ -1,29 +1,50 @@
 ---
 title: "Rentals Analysis"
-output: word_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## upload data
+## Data information:
+
+There are 12 different Agencies and data shows us the properties which were on the rental listings in last month and in ACT, Australia.
+
+This report shows the following results in the analysis:
+
+1. Total number of rental properties by each Agency.
+
+2. The location of each property.
+
+3. The number of properties were provided by Agency in each suburb.
+
+4. Average rental price per week.
+
+5. The price difference between price guide and first listed price guide.
+
+6. Average rental price for each type of room per week.
+
+7. Number of properties had been listed in each week.
 
 
-```{r upload}
+```{r upload, echo=FALSE, message=FALSE}
 library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(stringr)
 library(sp)
 library(leaflet)
-rental <- read.csv("rental.csv")
+library(devtools)
+rental <- read.csv("C:\\PropicData\\rental.csv")
 rentals <- tbl_df(rental)
 ```
 
-## Number of rental properties for each agency:
+## 1. For each agency, the number of rental properties they posted on the list:
 
-```{r properties}
+```{r properties, echo=FALSE}
 rentals%>%
   group_by(Agency)%>%
   summarise(num = n())%>%
@@ -31,68 +52,79 @@ rentals%>%
 
 ```
 
-Note that LJ Hooker - Belconnen and Ray White - Canberra post the most number of properties on the list in last month.
+The table indicates that LJ Hooker - Belconnen and Ray White - Canberra posted the most number of properties on the list in last month.
 
-## Bar chart:
-This chart shows that the total number of properties in each suburb.
+## 2. Bar chart:
 
-```{r bar}
-#rental%>%
-#  group_by(Suburb)%>%
-#  mutate(count = n())%>%
-#  arrange(desc(count))%>%
-#  select(Suburb, count)
-#  ggplot(data = rentals, mapping = aes(x = reorder(Suburb, count), y = count)) + theme_bw() + geom_bar(stat = 'identity') + theme(axis.text.x = element_text(face = "bold", angle = 45)) + theme(panel.border = element_blank()) + theme(panel.grid = element_blank()) + 
-#  labs(y = "number of properties", title = "Total counts in each suburb")
+This bar chart shows that the total number of properties in each suburb:
+
+```{r bar, echo=FALSE}
+
+ ggplot(rentals, aes(x = Suburb)) + theme_bw() + geom_bar() + theme(axis.text.x = element_text(face = "bold", angle = 45)) + theme(panel.border = element_blank()) + theme(panel.grid = element_blank()) +
+ labs(y = "number of properties", title = "Total counts in each suburb")
+ 
 ```
 
-## Map chart:
-This chart shows the location of each property and the rent for each property.
+MacGregar has more properties for rent and Charnwood, Flynn, Fraser, Latham have a similar amount of rental properties.
 
-```{r map}
+## 3. Map diagram:
+
+This map shows the location of each property and the rental price for each property:
+
+```{r map , echo=FALSE, message=FALSE}
+devtools::install_github('rstudio/leaflet')
+```
+
+This map provides a clear view of the location of all properties and the map can be zoomed in or out to see more details. The map tag can be clicked to see the rental price of that property.
+
+```{r mapp, echo=FALSE}
 rentals$long <- as.numeric(rentals$Longitude)
 rentals$lat <- as.numeric(rentals$Latitude)
 rentals.sp <- SpatialPointsDataFrame(rentals[,c(7,8)], rentals[,-c(7,8)])
 
 m <- leaflet()%>%
   addTiles()%>%
-  addMarkers(data = rentals, lng = ~Longitude, lat = ~Latitude, popup = (~First.Listed.Price))
+  addMarkers(data = rentals, lng = ~Longitude, lat = ~Latitude, popup = ~First.Listed.Price)
 m
- 
 
 ```
 
-## Total rental properties were provided by each agency in each suburb:
+## 4. Total rental properties were provided by each agency in each suburb:
 
-```{r total properties}
+```{r total properties, echo=FALSE}
 rentals%>%
   group_by(Suburb,Agency)%>%
-  tally()
+  summarise(n = n())%>%
+  arrange(desc(n))
 ```
 
-## Average rental price in each suburb per week:
+In MacGregor, Manage Me - Property Rentals has two rental properties. In other suburbs, almost one agency has only one property for rent.
 
-```{r rent}
+## 5. The average rental price in each suburb per week:
+
+```{r rent, echo=FALSE}
 rentals%>%
   group_by(Suburb)%>%
-  summarise(avg_price = mean(First.Listed.Price.Guide, na.rm = TRUE ))%>%
+  summarise(avg_price = mean(First.Listed.Price.Guide, na.rm = TRUE ), n = n())%>%
   arrange(desc(avg_price))
 ```
 
-The rental prices are expensive at Latham and Melba, whatsmore, Charnwood has the cheapest rental price.
+This table shows the average rental price in each suburb. However there are not many properties in each suburb, so this average price is not relatively accurate. For a large number of data records, it will reflect more reliable information.
 
-## Price different % between listed and price guide
+## 6. Price difference between listed and price guide:
 
-```{r diff}
+```{r diff, echo=FALSE}
 rentals%>%
   select(Agency,Suburb, Price.Guide, First.Listed.Price.Guide)%>%
-  mutate(Percentage = (((First.Listed.Price.Guide - Price.Guide)/Price.Guide))*100)%>%
+  mutate(Percentage = (((Price.Guide - First.Listed.Price.Guide)/First.Listed.Price.Guide))*100)%>%
   arrange(Percentage)
 ```
 
-## Average rental price in each type of room per week:
+According to this table we can see that some properties have lower price guide compared with their first listed price guide. Some of them have higher price guide, but most of the properties remain the same price. 
 
-```{r price}
+## 7. The average rental price in each type of room per week:
+
+```{r price , echo=FALSE}
 bed_no = c(3,4)
 bath_no = c(1,2)
 
@@ -106,6 +138,8 @@ for (i in bed_no) {
 }
 ```
 
+To sum up:
+
 3 beds and 1 bath average rental price: $456/week;
 
 3 beds and 2 baths average rental price: $545/week;
@@ -114,18 +148,26 @@ for (i in bed_no) {
 
 4 beds and 2 baths average rental price: $618/week
 
-## How many properties has been listed for each week by each agency:
 
-```{r by week}
+## 8. The number of properties have been listed for each week by each agency:
+
+```{r by week, echo=FALSE}
 rentals%>%
   mutate(week = isoweek(as.Date(First.Listed)))%>%
   group_by(week, Agency)%>%
-  summarise(num = n())
+  summarise(num = n())%>%
+  arrange(desc(num))
 
+```
+
+HJ Hooker - Belconnen posted the most properties in week 16. 
+
+```{r weeknum, echo = FALSE}
 rentals%>%
   mutate(week = isoweek(as.Date(First.Listed)))%>%
   group_by(week)%>%
   summarise(num = n())
+
 ```
 
-
+There is a summary for the total number of properties have been listed in each week number. 

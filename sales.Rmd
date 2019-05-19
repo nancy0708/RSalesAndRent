@@ -11,39 +11,41 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
 ## Data information:
 There are 20 different Agencies and data shows us the properties which were on the sales listing in last month and in ACT, Australia.
 
 This report shows the following results in the analysis:
 
-1.Total number of properties by each Agency.
+1. Total number of properties by each Agency.
 
-2.The location of each property.
+2. The location of each property.
 
-3.Average price for each type of property.
+3. Average price for each type of property.
 
-4.Average price for property in each suburb.
+4. Average price for property in each suburb.
 
-5.Total number of properties had been listed by each Agency in each suburb.
+5. Total number of properties have been listed by each Agency in each suburb.
 
-6.Number of properties had been listed in each week.
+6. Number of properties had been listed in each week.
 
-## upload data
 
-```{r echo=FALSE}
-sales <- read.csv("sales.csv")
+
+```{r echo=FALSE, message=FALSE}
+sales <- read.csv("C:\\PropicData\\sales.csv")
 library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(stringr)
 library(sp)
 library(leaflet)
+library(devtools)
 sales1 <- tbl_df(sales)
 ```
 
-## For each agency, how many properties they post on the list:
+## 1. For each agency, the number of properties they posted on the list:
 
-```{r agency}
+```{r agency, echo=FALSE}
 sales1%>%
   group_by(Agency)%>%
   summarise(total_num = n())%>%
@@ -52,21 +54,28 @@ sales1%>%
 
 ```
 
-Note that LJ Hooker Kippax - Holt and Ray White - Canberra post the most properties on the list in last month.
+It's very clear to see that LJ Hooker Kippax - Holt and Ray White - Canberra posted the most properties on the list in last month.
 
-## Bar chart:
-This chart shows that the total number of properties in each suburb.
+## 2. Bar chart:
+This chart shows that the total number of properties in each suburb:
 
-```{r bar}
+```{r bar, echo = FALSE}
 ggplot(sales1, aes(x = Suburb)) + theme_bw() + geom_bar() + theme(axis.text.x = element_text(face = "bold", angle = 45)) + theme(panel.border = element_blank()) + theme(panel.grid = element_blank()) +
   labs(y = "number of properties", title = "Total counts in each suburb")
 ```
 
-## Map chart:
-This chart shows the location of each property.
+The Bar chart can be more intuitive to show their distribution. More properties are located at MacGregor, and less properties are located at Latham.
 
-```{r map}
+## 3. Map diagram:
+
+This map shows the location of each property:
+```{r devtool, echo = FALSE, message=FALSE}
 devtools::install_github('rstudio/leaflet')
+```
+
+This map provides a clear view of the location of all properties and the map can be zoomed in or out to see more details. The map tag can be clicked to see the name of suburb of that property. 
+
+```{r map, echo=FALSE}
 sales1$long <- as.numeric(sales1$Longitude)
 sales1$lat <- as.numeric(sales1$Latitude)
 sales1.sp <- SpatialPointsDataFrame(sales1[,c(7,8)], sales1[,-c(7,8)])
@@ -76,49 +85,60 @@ m <- leaflet()%>%
   addMarkers(data = sales1, lng = ~Longitude, lat = ~Latitude, popup = ~Suburb)
 m
 
-
- #ggplot() + geom_point(data = sales1, aes(x = Longitude, y = Latitude), color = "red")
+#ggplot() + geom_point(data = sales1, aes(x = Longitude, y = Latitude), color = "red")
 
 ```
 
-## For each type of the property, what is the average sales price guide:
+## 4. For each type of the property, the average sales price guide:
 
-```{r price guide}
+```{r price guide, echo=FALSE}
 sales1%>%
   group_by(Property.Type)%>%
   summarise(avg_guide = mean(Price.Guide, na.rm = TRUE), n = n())
 ```
 
-## The average price for each suburb:
+The table shows the average price for house and townhouse. However, townhouse only has two recorded data. Therefore, it's not representative to show the average price of the townhouse in ACT. For house, the average price is around $171k.
 
-```{r suburb}
+## 5. The average price for each suburb:
+
+```{r suburb, echo=FALSE}
 sales1%>%
   group_by(Suburb)%>%
-  summarise(ave_first_listed = mean(First.Listed.Price.Guide, na.rm = TRUE), ave_price_guide = mean(Price.Guide, na.rm = TRUE))%>%
-  arrange(desc(ave_first_listed),desc(ave_price_guide))
+  summarise(ave_first_listed = mean(First.Listed.Price.Guide, na.rm = TRUE),n=n())%>%
+  arrange(desc(ave_first_listed))
+ 
 
 ```
 
-The properties in McKellar are much more expensive than other suburbs.
+According to this table above, it's easy to find that the average first listed price guide in Mckellar are much more expensive than the price in other suburbs. The reason is that there are four properties are recorded in datasets. However, only two of them have the price record, and one property at 20 Dumas Street in Mckellar is a 5 bedrooms and 4 bathrooms house. The price is $23,000,000. That cause the average price in Mckellar is higher than others. 
 
-## How many properties that each agency post in each suburb:
+## 6. Number of properties that each agency posted in each suburb: 
 
-```{r property in each suburb}
+```{r property in each suburb, echo=FALSE}
 sales1%>%
   group_by(Suburb,Agency)%>%
-  tally()%>%
-  print.data.frame()
+  summarise(n = n())%>%
+  arrange(desc(n))
+
+  #print.data.frame()
 
 ```
 
-## How many properties has been listed for each week by each agency:
+This table can show us the information about which Agency posted the most properties in each Suburb. We can see that Ray White and LJ Hooker have more resources.
 
-```{r by week}
+## 7. Number of properties have been listed for each week by each agency:
+
+```{r by week, echo = FALSE}
 sales1%>%
   mutate(week = isoweek(as.Date(First.Listed)))%>%
   group_by(week,Agency)%>%
-  summarise(num = n()) 
+  summarise(num = n())%>%
+  arrange(desc(num))
+```
 
+This table shows us the number of properties were posted every week in the last month by each Agency. We can see that in week 21, Ray White - Canberra posted 5 properties and LJ Hooker Kippax - Holt posted 4 properties. 
+
+```{r by totalweek, echo = FALSE}
 sales1%>%
   mutate(week = isoweek(as.Date(First.Listed)))%>%
   group_by(week)%>%
@@ -126,7 +146,7 @@ sales1%>%
 
 ```
 
-
+This table shows us a summary about total number of properties were posted in each week number.
 
 
 
