@@ -73,7 +73,7 @@ This map shows the location of each property:
 devtools::install_github('rstudio/leaflet')
 ```
 
-This map provides a clear view of the location of all properties and the map can be zoomed in or out to see more details. The map tag can be clicked to see the name of suburb of that property. 
+This map provides a clear view of the location of all properties and the map can be zoomed in or out to see more details. The map tag can be clicked to see the name of suburb and Agency of that property. 
 
 ```{r map, echo=FALSE}
 sales1$long <- as.numeric(sales1$Longitude)
@@ -82,7 +82,7 @@ sales1.sp <- SpatialPointsDataFrame(sales1[,c(7,8)], sales1[,-c(7,8)])
 
 m <- leaflet()%>%
   addTiles()%>%
-  addMarkers(data = sales1, lng = ~Longitude, lat = ~Latitude, popup = ~Suburb)
+  addMarkers(data = sales1, lng = ~Longitude, lat = ~Latitude, popup = ~str_c(Suburb,' ',Agency))
 m
 
 #ggplot() + geom_point(data = sales1, aes(x = Longitude, y = Latitude), color = "red")

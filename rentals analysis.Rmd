@@ -60,10 +60,11 @@ This bar chart shows that the total number of properties in each suburb:
 
 ```{r bar, echo=FALSE}
 
- ggplot(rentals, aes(x = Suburb)) + theme_bw() + geom_bar() + theme(axis.text.x = element_text(face = "bold", angle = 45)) + theme(panel.border = element_blank()) + theme(panel.grid = element_blank()) +
+ ggplot(rentals, (aes(x = Suburb))) + theme_bw() + geom_bar() + theme(axis.text.x = element_text(face = "bold", angle = 45)) + theme(panel.border = element_blank()) + theme(panel.grid = element_blank()) +
  labs(y = "number of properties", title = "Total counts in each suburb")
  
 ```
+
 
 MacGregar has more properties for rent and Charnwood, Flynn, Fraser, Latham have a similar amount of rental properties.
 
@@ -75,8 +76,9 @@ This map shows the location of each property and the rental price for each prope
 devtools::install_github('rstudio/leaflet')
 ```
 
-This map provides a clear view of the location of all properties and the map can be zoomed in or out to see more details. The map tag can be clicked to see the rental price of that property.
+This map provides a clear view of the location of all properties and the map can be zoomed in or out to see more details. The map tag can be clicked to see the rental price and the name of Agency of that property.
 
+I marked red circles for the most expensive properties, which is $650/week, and green circles for the cheapest one, which is $390/week.
 ```{r mapp, echo=FALSE}
 rentals$long <- as.numeric(rentals$Longitude)
 rentals$lat <- as.numeric(rentals$Latitude)
@@ -84,7 +86,11 @@ rentals.sp <- SpatialPointsDataFrame(rentals[,c(7,8)], rentals[,-c(7,8)])
 
 m <- leaflet()%>%
   addTiles()%>%
-  addMarkers(data = rentals, lng = ~Longitude, lat = ~Latitude, popup = ~First.Listed.Price)
+  addMarkers(data = rentals, lng = ~Longitude, lat = ~Latitude, popup = ~str_c(First.Listed.Price,' ', Agency))%>%
+  addCircleMarkers(149.0278, -35.218185, color = '#ff0000')%>%
+  addCircleMarkers(149.05362, -35.210167, color = '#ff0000')%>%
+  addCircleMarkers(149.0424194, -35.22812271, color = '#00ff00')%>%
+  addCircleMarkers(149.0003815, -35.20634842, color = '#00ff00')
 m
 
 ```
